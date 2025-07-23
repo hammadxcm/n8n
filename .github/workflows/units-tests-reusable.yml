@@ -36,7 +36,7 @@ jobs:
       - name: Build and Test
         uses: n8n-io/n8n/.github/actions/setup-nodejs-blacksmith@f5fbbbe0a28a886451c886cac6b49192a39b0eea # v1.104.1
         with:
-          build-command: pnpm test:ci
+          build-command: pnpm test --continue
           node-version: ${{ inputs.nodeVersion }}
 
       - name: Upload test results to Codecov
