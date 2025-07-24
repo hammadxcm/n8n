@@ -20,6 +20,10 @@ import {
 	MODAL_CONFIRM,
 	VIEWS,
 } from '@/constants';
+import { useAITemplatesStarterCollectionStore } from '@/experiments/aiTemplatesStarterCollection/stores/aiTemplatesStarterCollection.store';
+import SuggestedWorkflowCard from '@/experiments/personalizedTemplates/components/SuggestedWorkflowCard.vue';
+import SuggestedWorkflows from '@/experiments/personalizedTemplates/components/SuggestedWorkflows.vue';
+import { usePersonalizedTemplatesStore } from '@/experiments/personalizedTemplates/stores/personalizedTemplates.store';
 import InsightsSummary from '@/features/insights/components/InsightsSummary.vue';
 import { useInsightsStore } from '@/features/insights/insights.store';
 import type {
@@ -47,7 +51,6 @@ import { type Project, type ProjectSharingData, ProjectTypes } from '@/types/pro
 import { getEasyAiWorkflowJson } from '@/utils/easyAiWorkflowUtils';
 import {
 	isExtraTemplateLinksExperimentEnabled,
-	isPersonalizedTemplatesExperimentEnabled,
 	TemplateClickSource,
 	trackTemplatesClick,
 } from '@/utils/experiments';
@@ -70,7 +73,6 @@ import debounce from 'lodash/debounce';
 import { type IUser, PROJECT_ROOT } from 'n8n-workflow';
 import { computed, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue';
 import { type LocationQueryRaw, useRoute, useRouter } from 'vue-router';
-import { useAITemplatesStarterCollectionStore } from '@/experiments/aiTemplatesStarterCollection/stores/aiTemplatesStarterCollection.store';
 
 const SEARCH_DEBOUNCE_TIME = 300;
 const FILTERS_DEBOUNCE_TIME = 100;
@@ -115,6 +117,7 @@ const usageStore = useUsageStore();
 const insightsStore = useInsightsStore();
 const templatesStore = useTemplatesStore();
 const aiStarterTemplatesStore = useAITemplatesStarterCollectionStore();
+const personalizedTemplatesStore = usePersonalizedTemplatesStore();
 
 const documentTitle = useDocumentTitle();
 const { callDebounced } = useDebounce();
@@ -372,10 +375,6 @@ const showRegisteredCommunityCTA = computed(
 	() => isSelfHostedDeployment.value && !foldersEnabled.value && canUserRegisterCommunityPlus.value,
 );
 
-const experimentalShowSuggestedWorkflows = computed(() =>
-	isPersonalizedTemplatesExperimentEnabled(),
-);
-
 const showAIStarterCollectionCallout = computed(() => {
 	return (
 		!loading.value &&
@@ -489,7 +488,7 @@ const initialize = async () => {
 		workflowsStore.fetchActiveWorkflows(),
 		usageStore.getLicenseInfo(),
 		foldersStore.fetchTotalWorkflowsAndFoldersCount(route.params.projectId as string | undefined),
-		templatesStore.experimentalFetchSuggestedWorkflows(),
+		personalizedTemplatesStore.fetchSuggestedWorkflows(),
 	]);
 	breadcrumbsLoading.value = false;
 	workflowsAndFolders.value = resourcesPage;
@@ -1728,9 +1727,9 @@ const onNameSubmit = async (name: string) => {
 					</div>
 				</template>
 			</N8nCallout>
-			<SuggestedWorkflows v-if="experimentalShowSuggestedWorkflows">
+			<SuggestedWorkflows v-if="personalizedTemplatesStore.isFeatureEnabled()">
 				<SuggestedWorkflowCard
-					v-for="workflow in templatesStore.experimentalSuggestedWorkflows"
+					v-for="workflow in personalizedTemplatesStore.suggestedWorkflows"
 					:key="workflow.id"
 					data-test-id="resource-list-item-suggested-workflow"
 					:data="{
